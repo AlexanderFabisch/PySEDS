@@ -33,31 +33,6 @@ def mvn_pdf(x, mean, covariance):
         numpy.exp(-0.5 * x_mean.T.dot(covariance_inv).dot(x_mean))
 
 
-class GaussianMixture(object):
-    def __init__(self, priors, means, covariances):
-        self.priors = numpy.asarray(priors)
-        self,means = numpy.asarray(means)
-        self.covariances = numpy.asarray(covariances)
-        self.num_gaussians = len(priors)
-        self.num_task_dimensions = self.means.shape[1] / 2
-        assert self.num_gaussians == self.covariances.shape[0]
-        assert self.means.shape[1] == self.covariances.shape[1]
-        assert self.means.shape[1] == self.covariances.shape[2]
-        self.gaussians = [Gaussian(self.means[k], self.covariances[k])
-                          for k in self.num_gaussians]
-
-    def next(self, s):
-        h = self.priors * numpy.array([self.gaussians[k].pdf_sd(s)
-                                       for k in range(self.num_gaussians)])
-        h /= h.sum()
-        sd = numpy.zeros(self.num_task_dimensions)
-        for k in range(self.num_gaussians):
-            sd += h[k] * self.gaussians[k].mean_sd + \
-                self.gaussians[k].covariance_sds.dot(
-                numpy.linalg.inv(self.gaussians[k].covariance_ss
-                                 ).dot(s - self.gaussians[k].means_s))
-
-
 class Gaussian(object):
     def __init__(self, mean, covariance):
         self.mean = numpy.asarray(mean)
@@ -85,10 +60,38 @@ class Gaussian(object):
         return mvn_pdf(numpy.asarray(s), self.mean_s, self.covariance_ss)
 
 
+class GaussianMixture(object):
+    def __init__(self, priors, means, covariances):
+        self.priors = numpy.asarray(priors)
+        self,means = numpy.asarray(means)
+        self.covariances = numpy.asarray(covariances)
+
+        assert self.priors.shape[0] == self.covariances.shape[0]
+        assert self.means.shape[1] == self.covariances.shape[1]
+        assert self.means.shape[1] == self.covariances.shape[2]
+
+        self.num_gaussians = len(priors)
+        self.num_task_dimensions = self.means.shape[1] / 2
+        self.gaussians = [Gaussian(self.means[k], self.covariances[k])
+                          for k in self.num_gaussians]
+
+    def next(self, s):
+        h = self.priors * numpy.array([self.gaussians[k].pdf_sd(s)
+                                       for k in range(self.num_gaussians)])
+        h /= h.sum()
+        sd = numpy.zeros(self.num_task_dimensions)
+        for k in range(self.num_gaussians):
+            sd += h[k] * self.gaussians[k].mean_sd + \
+                self.gaussians[k].covariance_sds.dot(
+                numpy.linalg.inv(self.gaussians[k].covariance_ss
+                                 ).dot(s - self.gaussians[k].means_s))
+
+
 if __name__ == "__main__":
     seds = SEDS()
     gaussian = Gaussian([0, 0], [[1, 0], [0, 1]])
     numpy.testing.assert_allclose(gaussian.pdf_ssd([0], [0]), 0.159154943092)
     numpy.testing.assert_allclose(gaussian.pdf_sd([0]), 0.398942280401)
-    gmm = GaussianMixture([0.5, 0.5], [[0, 0], [1, 1]],
+    gmm = GaussianMixture([0.5, 0.5],
+                          [[0, 0], [1, 1]],
                           [[[1, 0], [0, 1]], [[1, 0], [0, 1]]])

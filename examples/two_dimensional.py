@@ -84,7 +84,8 @@ class GaussianMixture(object):
             sd += h[k] * self.gaussians[k].mean_sd + \
                 self.gaussians[k].covariance_sds.dot(
                 numpy.linalg.inv(self.gaussians[k].covariance_ss
-                                 ).dot(s - self.gaussians[k].means_s))
+                                 ).dot(s - self.gaussians[k].mean_s))
+        return sd
 
 
 if __name__ == "__main__":
@@ -95,3 +96,4 @@ if __name__ == "__main__":
     gmm = GaussianMixture([0.5, 0.5],
                           [[0, 0], [1, 1]],
                           [[[1, 0], [0, 1]], [[1, 0], [0, 1]]])
+    print gmm.next([-2.0])

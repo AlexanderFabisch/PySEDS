@@ -63,7 +63,7 @@ class Gaussian(object):
 class GaussianMixture(object):
     def __init__(self, priors, means, covariances):
         self.priors = numpy.asarray(priors)
-        self,means = numpy.asarray(means)
+        self.means = numpy.asarray(means)
         self.covariances = numpy.asarray(covariances)
 
         assert self.priors.shape[0] == self.covariances.shape[0]
@@ -73,7 +73,7 @@ class GaussianMixture(object):
         self.num_gaussians = len(priors)
         self.num_task_dimensions = self.means.shape[1] / 2
         self.gaussians = [Gaussian(self.means[k], self.covariances[k])
-                          for k in self.num_gaussians]
+                          for k in range(self.num_gaussians)]
 
     def next(self, s):
         h = self.priors * numpy.array([self.gaussians[k].pdf_sd(s)

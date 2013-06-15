@@ -3,11 +3,10 @@ import numpy
 import pylab
 
 
-def generate_demonstrations():
+def generate_demonstrations(delta_t):
     n_demos = 1
     n_task_dims = 2
-    n_steps = 100
-    delta_t = 0.01
+    n_steps = 10
 
     Sd = numpy.ndarray((n_demos, n_task_dims, n_steps))
     S = numpy.ndarray((n_demos, n_task_dims, n_steps))
@@ -22,15 +21,25 @@ def generate_demonstrations():
                              numpy.sin(2*numpy.pi*t/(n_steps-2.0))])
             Sd[d, :, t] = v
             S[d, :, t] = s
-            print a, v, s
+            #print a, v, s
 
     return S, Sd
 
 
 if __name__ == "__main__":
-    S, Sd = generate_demonstrations()
-    pylab.plot(S[0, 0, :], S[0, 1, :])
-    pylab.show()
+    delta_t = 0.1
+    S, Sd = generate_demonstrations(delta_t=delta_t)
 
-    seds = SEDS(2)
+    seds = SEDS(S[0, :, -1], 10)
     seds.imitate(S, Sd)
+
+    A = numpy.zeros_like(S)
+    s = 1*S[0, :, 0]
+    for t in range(S.shape[2]-1):
+        A[0, :, t] = s
+        sd = seds.step(s)
+        s += sd * delta_t
+
+    pylab.plot(S[0, 0, :], S[0, 1, :], "o")
+    pylab.plot(A[0, 0, :], A[0, 1, :], "o")
+    pylab.show()

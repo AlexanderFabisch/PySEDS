@@ -10,6 +10,11 @@ class SEDS(object):
         self.n_task_dims = len(attractor)
 
     def imitate(self, S, Sd):
+        weights, means, covars = self.__initial_parameters(S, Sd)
+        # TODO optimize with scipy.optimize.fmin_slsqp
+        self.gm = GaussianMixture(weights, means, covars)
+
+    def __initial_parameters(self, S, Sd):
         S = numpy.concatenate(S.swapaxes(1, 2), axis=0).T
         Sd = numpy.concatenate(Sd.swapaxes(1, 2), axis=0).T
         X = numpy.concatenate((S, Sd)).T
@@ -39,7 +44,7 @@ class SEDS(object):
                 numpy.linalg.inv(covars[k, :n_task_dims, :n_task_dims]).dot(
                 means[k, :n_task_dims] - self.attractor))
 
-        self.gm = GaussianMixture(weights, means, covars)
+        return weights, means, covars
 
     def step(self, s):
         """Compute next desired velocity from current state.

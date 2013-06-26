@@ -4,6 +4,9 @@ import numpy
 class GaussianMixture(object):
     """Mixture of Gaussians.
 
+    Khansari-Zadeh, S M; Billard, Aude:
+    Learning Stable Non-Linear Dynamical Systems with Gaussian Mixture Models
+
     Parameters
     ----------
     weights : array-like, shape (n_components)
@@ -44,16 +47,20 @@ class GaussianMixture(object):
                           for k in range(self.n_components)]
 
     def next(self, s):
-        h = self.weights * numpy.array([self.gaussians[k].pdf_sd(s)
+        h = self.weights * numpy.array([self.gaussians[k].pdf_s(s)
                                        for k in range(self.n_components)])
         h /= h.sum() + 1e-10
         sd = numpy.zeros(self.n_task_dims)
         for k in range(self.n_components):
-            sd += h[k] * self.gaussians[k].mean_sd + \
-                self.gaussians[k].covariance_sds.dot(
-                numpy.linalg.inv(self.gaussians[k].covariance_ss
-                                 ).dot(s - self.gaussians[k].mean_s))
+            Ak = self.gaussians[k].covariance_sds.dot(
+                numpy.linalg.inv(self.gaussians[k].covariance_ss))
+            bk = self.gaussians[k].mean_sd - Ak.dot(self.gaussians[k].mean_s)
+            sd += h[k] * (Ak.dot(s) + bk)
         return sd
+
+    def pdf_ssd(self, s, sd):
+        return numpy.sum([self.weights[k] * self.gaussians[k].pdf_ssd(s, sd)
+                          for k in range(self.n_components)])
 
 
 class Gaussian(object):
@@ -79,7 +86,7 @@ class Gaussian(object):
     def pdf_ssd(self, s, sd):
         return mvn_pdf(numpy.hstack((s, sd)), self.mean, self.covariance)
 
-    def pdf_sd(self, s):
+    def pdf_s(self, s):
         return mvn_pdf(numpy.asarray(s), self.mean_s, self.covariance_ss)
 
 

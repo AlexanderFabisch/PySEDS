@@ -5,13 +5,15 @@ from sklearn.mixture import GMM
 
 
 def _to_vector(weights, means, covars):
-    return numpy.hstack((weights.flatten(), means.flatten(), covars.flatten()))
+    # TODO cholesky
+    return numpy.hstack((numpy.log(weights).flatten(), means.flatten(), covars.flatten()))
 
 
-def _from_vector(x, weights, means, covars):
-    weights = x[:weights.size]
-    means = x[weights.size:-covars.size].reshape(means.shape)
-    covars = x[-covars.size:].reshape(covars.shape)
+def _from_optimization_vector(theta, weights, means, covars):
+    # TODO
+    weights = theta[:weights.size]
+    means = theta[weights.size:-covars.size].reshape(means.shape)
+    covars = theta[-covars.size:].reshape(covars.shape)
 
 
 class SEDS(object):
@@ -23,12 +25,19 @@ class SEDS(object):
     def imitate(self, S, Sd):
         weights, means, covars = self.__initial_parameters(S, Sd)
 
-        # TODO conditions
-        cost = lambda x: self.__cost(x)
-        cost_deriv = lambda x: self.__cost_deriv(x)
-        x0 = _to_vector(weights, means, covars)
-        scipy.optimize.fmin_slsqp(func=cost, fprime=cost_deriv, x0=x0,
-                                  eqcons=[], ieqcons=[])
+        # Alternative likelihood optimization
+        # The parameters of the SEDS are represented by
+        # p1, ..., pK, mu1, ..., muK, L1, ..., LK,
+        # where p1, ..., pK are the log-priors, i.e. pk = ln pik,
+        # mu1, ..., muK are the means and L1, ..., LK are the Cholesky
+        # decompositions of the covariance matrices (these do always exist
+        # since covariance matrices are positive definite).
+        cost = lambda theta: self.__cost(theta)
+        cost_deriv = lambda theta: self.__cost_deriv(theta)
+        theta0 = _to_optimization_vector(weights, means, covars)
+        # TODO conditions, cost function
+        #scipy.optimize.fmin_slsqp(func=self.cost, fprime=self.cost_deriv,
+        #                          theta0=theta0, eqcons=[], ieqcons=[])
 
         self.gm = GaussianMixture(weights, means, covars)
 

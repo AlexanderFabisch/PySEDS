@@ -26,6 +26,18 @@ class SEDS(object):
         self.debug = debug
 
     def imitate(self, S, Sd):
+        """Imitate demonstrations.
+
+        Parameters
+        ----------
+        S: array-like, shape = (n_demonstrations, n_task_dims, n_steps)
+            Positions
+        Sd: array-like, shape = (n_demonstrations, n_task_dims, n_steps)
+            Velocities
+        """
+        self.S = S
+        self.Sd = Sd
+
         weights, means, covars = self.__initial_parameters(S, Sd)
 
         # Alternative likelihood optimization
@@ -91,6 +103,11 @@ class SEDS(object):
         return weights, means, covars
 
     def __cost_deriv(self, weights, means, covars):
+        gm = GaussianMixture(weights, means, covars)
+        J = -numpy.sum([numpy.log(gm.pdf_ssd(self.S[d, :, t], self.Sd[d, :, t]))
+                        for t in range(self.S.shape[2])
+                        for d in range(self.S.shape[0])]) / self.S.shape[0]
+        print "J = %f" % J
         # TODO implement
         weights_deriv = numpy.zeros_like(weights)
         means_deriv = numpy.zeros_like(means)

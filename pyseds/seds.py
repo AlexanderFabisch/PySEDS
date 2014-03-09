@@ -27,20 +27,20 @@ class SEDS(object):
         self.n_task_dims = len(attractor)
         self.verbose = verbose
 
-    def imitate(self, S, Sd):
+    def imitate(self, X, Xd):
         """Imitate demonstrations.
 
         Parameters
         ----------
-        S: array-like, shape = (n_demonstrations, n_task_dims, n_steps)
+        X: array-like, shape = (n_demonstrations, n_task_dims, n_steps)
             Positions
-        Sd: array-like, shape = (n_demonstrations, n_task_dims, n_steps)
+        Xd: array-like, shape = (n_demonstrations, n_task_dims, n_steps)
             Velocities
         """
-        self.S = S
-        self.Sd = Sd
+        self.S = X
+        self.Sd = Xd
 
-        priors, means, covars = self.__initial_parameters(S, Sd)
+        priors, means, covars = self.__initial_parameters(self.S, self.Sd)
 
         # Alternative likelihood optimization
         # The parameters of the SEDS are represented by
@@ -78,7 +78,9 @@ class SEDS(object):
         X = numpy.concatenate((S, Sd)).T
 
         gmm = GMM(self.n_components)
-        gmm.from_data(X)
+        gmm.from_samples(X)
+        if self.verbose:
+            print("Estimated GMM")
 
         n_task_dims = self.n_task_dims
         priors = gmm.priors
